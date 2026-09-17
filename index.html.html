@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Merger - รวมไฟล์ Excel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .mode-btn {
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .mode-btn:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .dropzone {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .dropzone:hover,
+        .dropzone.dragover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .dropzone-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .dropzone p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .dropzone-hint {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .files-list {
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .file-item-name {
+            color: #333;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .file-item-size {
+            color: #999;
+            margin-right: 12px;
+            font-size: 12px;
+        }
+
+        .remove-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: #ff5252;
+        }
+
+        .status-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-section.show {
+            display: block;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .status-percentage {
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .status-details {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: #51cf66;
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-success:hover {
+            background: #40c057;
+            transform: translateY(-2px);
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #667eea;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .dropzone {
+                padding: 30px 15px;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Excel Merger</h1>
+            <p>รวมไฟล์ Excel หรือ Sheets ด้วยความง่าย</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="files">
+                📁 รวมไฟล์
+            </button>
+            <button class="mode-btn" data-mode="sheets">
+                📋 รวม Sheets
+            </button>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">📥</div>
+            <p><strong>ลากไฟล์มาวางที่นี่</strong></p>
+            <p class="dropzone-hint">หรือคลิกเพื่อเลือกไฟล์</p>
+        </div>
+
+        <input type="file" id="fileInput" class="file-input" multiple accept=".xlsx,.xls,.csv">
+
+        <div class="files-list" id="filesList"></div>
+
+        <div class="status-section" id="statusSection">
+            <div class="status-header">
+                <span class="status-text">
+                    <span class="spinner"></span>
+                    <span id="statusText">กำลังเตรียม...</span>
+                </span>
+                <span class="status-percentage" id="statusPercentage">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="status-details" id="statusDetails"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-secondary" id="clearBtn" style="display: none;">ล้างทั้งหมด</button>
+            <button class="btn btn-primary" id="mergeBtn" disabled>รวมตอนนี้</button>
+            <button class="btn btn-success" id="downloadBtn" style="display: none;">💾 ดาวโหลด Excel</button>
+        </div>
+    </div>
+
+    <script>
+        const CHUNK_SIZE = 50000; // Size per processing chunk
+        let selectedFiles = [];
+        let mergedData = null;
+        let currentMode = 'files';
+
+        // Mode selector
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentMode = e.target.dataset.mode;
+            });
+        });
+
+        // Dropzone events
+        const dropzone = document.getElementById('dropzone');
+
+        dropzone.addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        // File input
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            selectedFiles = Array.from(files).filter(file => 
+                file.name.match(/\.(xlsx?|csv)$/i)
+            );
+
+            if (selectedFiles.length === 0) {
+                showError('กรุณาเลือกไฟล์ Excel (.xlsx, .xls) หรือ CSV');
+                return;
+            }
+
+            updateFilesList();
+            document.getElementById('mergeBtn').disabled = false;
+            document.getElementById('clearBtn').style.display = 'block';
+        }
+
+        function updateFilesList() {
+            const list = document.getElementById('filesList');
+            list.innerHTML = selectedFiles.map((file, index) => `
+                <div class="file-item">
+                    <span class="file-item-name">📄 ${file.name}</span>
+                    <span class="file-item-size">${(file.size / 1024).toFixed(1)} KB</span>
+                    <button class="remove-btn" onclick="removeFile(${index})">ลบ</button>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            if (selectedFiles.length === 0) {
+                document.getElementById('mergeBtn').disabled = true;
+                document.getElementById('clearBtn').style.display = 'none';
+            }
+            updateFilesList();
+        }
+
+        async function mergeFiles() {
+            if (selectedFiles.length === 0) {
+                showError('กรุณาเลือกไฟล์ก่อน');
+                return;
+            }
+
+            showStatus('กำลังอ่านไฟล์...');
+            document.getElementById('mergeBtn').disabled = true;
+
+            try {
+                let allData = [];
+                const totalFiles = selectedFiles.length;
+
+                for (let i = 0; i < totalFiles; i++) {
+                    const file = selectedFiles[i];
+                    const percentage = Math.round((i / totalFiles) * 100);
+                    updateProgress(percentage, `อ่านไฟล์ ${i + 1}/${totalFiles}: ${file.name}`);
+
+                    const workbook = await readExcelFile(file);
+                    
+                    if (currentMode === 'files') {
+                        allData.push({
+                            name: file.name.replace(/\.[^/.]+$/, ''),
+                            sheets: workbook.SheetNames,
+                            data: workbook.Sheets
+                        });
+                    } else {
+                        // Merge sheets mode
+                        for (const sheetName of workbook.SheetNames) {
+                            const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+                            allData.push({
+                                source: file.name,
+                                sheet: sheetName,
+                                data: sheetData
+                            });
+                        }
+                    }
+
+                    // Allow UI to update
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+
+                showStatus('กำลังรวมข้อมูล...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                if (currentMode === 'files') {
+                    mergedData = createMultiSheetWorkbook(allData);
+                } else {
+                    mergedData = createSingleSheetWorkbook(allData);
+                }
+
+                updateProgress(100, 'เสร็จสิ้น!');
+                showSuccess(`รวมไฟล์สำเร็จ - ${totalFiles} ไฟล์`);
+                document.getElementById('downloadBtn').style.display = 'block';
+
+            } catch (error) {
+                showError('เกิดข้อผิดพลาด: ' + error.message);
+                console.error(error);
+            } finally {
+                document.getElementById('mergeBtn').disabled = false;
+            }
+        }
+
+        function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const workbook = XLSX.read(e.target.result, { type: 'array' });
+                        resolve(workbook);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function createMultiSheetWorkbook(allData) {
+            const newWorkbook = XLSX.utils.book_new();
+
+            allData.forEach(fileData => {
+                fileData.sheets.forEach(sheetName => {
+                    const ws = fileData.data[sheetName];
+                    const newSheetName = `${fileData.name}-${sheetName}`.substring(0, 31);
+                    XLSX.utils.book_append_sheet(newWorkbook, ws, newSheetName);
+                });
+            });
+
+            return newWorkbook;
+        }
+
+        function createSingleSheetWorkbook(allData) {
+            const newWorkbook = XLSX.utils.book_new();
+            let combinedData = [];
+
+            allData.forEach((item, index) => {
+                if (index > 0) {
+                    combinedData.push({});
+                }
+                combinedData = combinedData.concat(item.data);
+                combinedData.push({});
+            });
+
+            const ws = XLSX.utils.json_to_sheet(combinedData.filter(row => Object.keys(row).length > 0));
+            XLSX.utils.book_append_sheet(newWorkbook, ws, 'Merged Data');
+
+            return newWorkbook;
+        }
+
+        function showStatus(text) {
+            const section = document.getElementById('statusSection');
+            section.classList.add('show');
+            document.getElementById('statusText').textContent = text;
+        }
+
+        function updateProgress(percentage, details) {
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('statusPercentage').textContent = percentage + '%';
+            document.getElementById('statusDetails').textContent = details;
+        }
+
+        function showError(message) {
+            const msg = document.getElementById('errorMessage');
+            msg.textContent = message;
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(message) {
+            const msg = document.getElementById('successMessage');
+            msg.textContent = message;
+            msg.classList.add('show');
+        }
+
+        function downloadExcel() {
+            if (!mergedData) {
+                showError('ไม่มีข้อมูลสำหรับดาวโหลด');
+                return;
+            }
+
+            const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const fileName = `merged_${timestamp}.xlsx`;
+            XLSX.writeFile(mergedData, fileName);
+        }
+
+        document.getElementById('mergeBtn').addEventListener('click', mergeFiles);
+        document.getElementById('downloadBtn').addEventListener('click', downloadExcel);
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            selectedFiles = [];
+            document.getElementById('filesList').innerHTML = '';
+            document.getElementById('mergeBtn').disabled = true;
+            document.getElementById('clearBtn').style.display = 'none';
+            document.getElementById('downloadBtn').style.display = 'none';
+            document.getElementById('statusSection').classList.remove('show');
+            document.getElementById('successMessage').classList.remove('show');
+            document.getElementById('errorMessage').classList.remove('show');
+        });
+    </script>
+</body>
+</html>
